@@ -1,0 +1,16 @@
+version: '2'
+services:
+  db:
+    container_name: postgres14
+    image: postgres:14.1-alpine
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=secret
+    networks:
+      - default
+
+volumes:
+  db:
