@@ -3,13 +3,10 @@
 # the porpuse of this script is to create a containerize db to run
 # all integration tests. This is not a well spoken technique, but
 # something that I think its gonna work...
+source .cfg
 
-IMAGE_DB=postgres:14.1-alpine
-CONTAINER_NAME_TEST=test_postgres14
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
-DB_EXTERNALPORT_TEST=25432
-DB_PORT=5432
 
 #
 # util so we can easy clean up
@@ -44,9 +41,17 @@ DB_NAME=test_db
 
 echo "creating test db: $DB_NAME"
 PGPASSWORD=$DB_PASSWORD psql --host=localhost                       \
-                             --port=25432                           \
+                             --port=$DB_EXTERNALPORT_TEST           \
                              --username=$DB_USERNAME                \
                              --command="create database ${DB_NAME}" \
+
+echo "creating extensions"
+PGPASSWORD=$DB_PASSWORD psql --host=localhost                                  \
+                             --port=$DB_EXTERNALPORT_TEST                      \
+                             --username=$DB_USERNAME                           \
+                             -d $DB_NAME                                       \
+                             --command="CREATE EXTENSION IF NOT EXISTS citext" \
+
 
 DB_DSN=$DB_DSN/$DB_NAME?sslmode=disable
 

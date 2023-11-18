@@ -30,21 +30,17 @@ fi
 DB_DSN=postgres://$DB_USERNAME:$DB_PASSWORD@localhost:$DB_PORT
 
 echo "creating db: $DB_NAME"
-PGPASSWORD=$DB_PASSWORD psql --host=localhost                       \
-                             --port=$DB_PORT                        \
-                             --username=$DB_USERNAME                \
-                             --command="CREATE DATABASE ${DB_NAME}" \
+PGPASSWORD=$DB_PASSWORD psql --host=localhost --port=$DB_PORT --username=$DB_USERNAME \
+                             --command="CREATE DATABASE ${DB_NAME}"                   \
 
 echo "creating extensions"
-PGPASSWORD=$DB_PASSWORD psql --host=localhost --port=$DB_PORT -d $DB_NAME      \
-                             --username=$DB_USERNAME                           \
-                             --command="CREATE EXTENSION IF NOT EXISTS citext" \
+PGPASSWORD=$DB_PASSWORD psql --host=localhost --port=$DB_PORT --username=$DB_USERNAME -d $DB_NAME \
+                             --command="CREATE EXTENSION IF NOT EXISTS citext"                    \
 
 echo "creating default user"
 read -p "Enter password for greenlight DB user: " DB_USER_PASSWORD
-PGPASSWORD=$DB_PASSWORD psql --host=localhost --port=$DB_PORT -d $DB_NAME                                      \
-                             --username=$DB_USERNAME                                                           \
-                             --command="CREATE ROLE ${DB_NAME} WITH LOGIN PASSWORD '${DB_USER_PASSWORD}'"      \
+PGPASSWORD=$DB_PASSWORD psql --host=localhost --port=$DB_PORT -d $DB_NAME --username=$DB_USERNAME         \
+                             --command="CREATE ROLE ${DB_NAME} WITH LOGIN PASSWORD '${DB_USER_PASSWORD}'" \
 
 
 echo "" >> .env
