@@ -1,24 +1,30 @@
+//go:build integration
+// +build integration
+
 package data
 
 import (
-	"database/sql"
+	"flag"
+	"fmt"
+	"log"
 	"os"
 	"testing"
 )
 
-var testDB struct {
-	cfg DBCfg
-	DB  *sql.DB
-}
+var testModels Models
 
 func TestMain(m *testing.M) {
-	ParseDBCfg(&testDB.cfg)
+	var cfg DBCfg
+	ParseDBCfg(&cfg)
+	flag.Parse()
 
-	var err error
-	testDB.DB, err = OpenDB(testDB.cfg)
+	testDB, err := OpenDB(cfg)
+	fmt.Printf("%+v", cfg)
+
 	if err != nil {
-		panic(err)
+		log.Fatalf("make sure to set up env vars to run the integration tests. err: %s", err)
 	}
 
+	testModels = NewModels(testDB)
 	os.Exit(m.Run())
 }

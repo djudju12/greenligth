@@ -67,6 +67,4 @@ fi
 
 echo 'all set!'
 
-# its very crucial to echo the db url when we finished
-# so we can use in the make file to run the tests
 echo $DB_DSN

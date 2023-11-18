@@ -47,6 +47,11 @@ build/api:
 	go build -ldflags=${linker_flags} -o=./bin/api ./cmd/api
 	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/api ./cmd/api
 
+.PHONY: run/tests/integration
+## Run all tests, including units
+run/tests/integration:
+	go test ./... -tags=integration -db-dsn=$(shell ./set_test_db.sh | tail -n 1)
+
 .PHONY: audit
 ## audit: tidy and vendor dependencies and format, vet and test all code
 audit: vendor

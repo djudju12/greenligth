@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"flag"
+	"os"
 	"time"
 )
 
@@ -42,7 +43,7 @@ func OpenDB(cfg DBCfg) (*sql.DB, error) {
 }
 
 func ParseDBCfg(cfg *DBCfg) {
-	flag.StringVar(&cfg.Dsn, "db-dsn", "", "PostgreSQL DSN")
+	flag.StringVar(&cfg.Dsn, "db-dsn", os.Getenv("GREENLIGHT_DB_DSN"), "PostgreSQL DSN")
 	flag.IntVar(&cfg.MaxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.MaxIdlesConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(&cfg.MaxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
