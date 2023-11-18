@@ -1,4 +1,4 @@
-include .envrc
+include .env
 
 ## help: show this help message
 help:
@@ -18,6 +18,11 @@ run/api:
 ## db/psql: connect to the database using psql
 db/psql:
 	psql ${GREENLIGHT_DB_DSN}
+
+.PHONY: db/local/build
+## db/build: create a new database
+db/local/build: confirm
+	./set_db.sh
 
 .PHONY: db/migration/new
 ## db/migration/new name=$1: create a new database migration
