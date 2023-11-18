@@ -12,7 +12,6 @@ import (
 )
 
 func TestUpdateUser(t *testing.T) {
-	// given
 	t.Log("running 'TestUpdateUser'")
 
 	randomUser1 := randomUser()
@@ -27,7 +26,6 @@ func TestUpdateUser(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, beforeUser)
 
-	// when
 	beforeUser.Email = util.RandomEmail()
 	beforeUser.Name = util.RandomFullName()
 	versionBeforeUpdate := beforeUser.Version
@@ -37,7 +35,7 @@ func TestUpdateUser(t *testing.T) {
 
 	require.NoError(t, err)
 
-	t.Log("making updates...s")
+	t.Log("making updates...")
 	err = testModels.Users.Update(beforeUser)
 
 	require.NoError(t, err)
@@ -60,17 +58,14 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestGetUserByEmail(t *testing.T) {
-	// given
 	t.Log("running 'TestGetUserByEmail'")
 	expectedUser := randomUser()
 	err := InsertUser(&expectedUser)
 	require.NoError(t, err)
 
-	// when
 	t.Logf("geting user by email. Email: %s", expectedUser.Email)
 	user, err := testModels.Users.GetByEmail(expectedUser.Email)
 
-	// then
 	t.Logf("actual user: %+v", user)
 	require.NoError(t, err)
 	require.NotEmpty(t, user)
@@ -87,17 +82,13 @@ func TestGetUserByEmail(t *testing.T) {
 }
 
 func TestInsertUser(t *testing.T) {
-	// given
 	t.Log("running 'TestInsertUser'")
 	user := randomUser()
 
-	// when
 	t.Logf("inserting random user:  %+v", user)
 	err := InsertUser(&user)
 
-	// then
 	require.NoError(t, err)
-
 }
 
 func InsertUser(user *User) error {
