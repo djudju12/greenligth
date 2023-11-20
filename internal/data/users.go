@@ -12,7 +12,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var AnonymousUser = &User{}
+var (
+	AnonymousUser  = &User{}
+	SqlErrDupEmail = `pq: duplicate key value violates unique constraint "users_email_key"`
+)
 
 func (u *User) IsAnonymous() bool {
 	return u == AnonymousUser
@@ -110,7 +113,12 @@ func (m UserModel) Insert(user *User) error {
 	VALUES ($1, $2, $3, $4)
 	RETURNING  id, created_at, version`
 
-	args := []interface{}{user.Name, user.Email, user.Password.hash, user.Activated}
+	args := []interface{}{
+		user.Name,
+		user.Email,
+		user.Password.hash,
+		user.Activated,
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -118,7 +126,7 @@ func (m UserModel) Insert(user *User) error {
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.CreatedAt, &user.Version)
 	if err != nil {
 		switch {
-		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+		case err.Error() == SqlErrDupEmail:
 			return ErrDuplicateEmail
 		default:
 			return err
@@ -168,7 +176,14 @@ func (m UserModel) Update(user *User) error {
 	WHERE id=$5 AND version=$6
 	RETURNING version`
 
-	args := []interface{}{user.Name, user.Email, user.Password.hash, user.Activated, user.ID, user.Version}
+	args := []interface{}{
+		user.Name,
+		user.Email,
+		user.Password.hash,
+		user.Activated,
+		user.ID,
+		user.Version,
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -178,7 +193,7 @@ func (m UserModel) Update(user *User) error {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
 			return ErrEditConflict
-		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+		case err.Error() == SqlErrDupEmail:
 			return ErrDuplicateEmail
 		default:
 			return err

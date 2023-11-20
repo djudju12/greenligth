@@ -15,7 +15,7 @@ func TestUpdateUser(t *testing.T) {
 	t.Log("running 'TestUpdateUser'")
 
 	randomUser1 := randomUser()
-	err := InsertUser(&randomUser1)
+	err := testModels.Users.Insert(&randomUser1)
 
 	require.NoError(t, err)
 
@@ -60,7 +60,7 @@ func TestUpdateUser(t *testing.T) {
 func TestGetUserByEmail(t *testing.T) {
 	t.Log("running 'TestGetUserByEmail'")
 	expectedUser := randomUser()
-	err := InsertUser(&expectedUser)
+	err := testModels.Users.Insert(&expectedUser)
 	require.NoError(t, err)
 
 	t.Logf("geting user by email. Email: %s", expectedUser.Email)
@@ -81,18 +81,68 @@ func TestGetUserByEmail(t *testing.T) {
 	require.WithinDuration(t, time.Now(), user.CreatedAt, time.Second)
 }
 
+func TestGetForToken(t *testing.T) {
+	expectedUser := randomUser()
+
+	err := testModels.Users.Insert(&expectedUser)
+	require.NoError(t, err)
+
+	tokenDuration := time.Minute
+	token, err := testModels.Tokens.New(expectedUser.ID, tokenDuration, ScopeActiviation)
+	require.NoError(t, err)
+
+	actualUser, err := testModels.Users.GetForToken(ScopeActiviation, token.Plaintext)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, actualUser)
+
+	require.NotZero(t, actualUser.ID)
+	require.NotZero(t, actualUser.Version)
+
+	require.Equal(t, expectedUser.Name, actualUser.Name)
+	require.Equal(t, expectedUser.Email, actualUser.Email)
+	require.Equal(t, expectedUser.Password.hash, actualUser.Password.hash)
+	require.Equal(t, expectedUser.Activated, actualUser.Activated)
+
+	require.WithinDuration(t, time.Now(), actualUser.CreatedAt, time.Second)
+}
+
+func TestInserDuplicateUsesr(t *testing.T) {
+	user1 := randomUser()
+	err := testModels.Users.Insert(&user1)
+	require.NoError(t, err)
+
+	user2 := randomUser()
+	user2.Email = user1.Email
+	err = testModels.Users.Insert(&user2)
+
+	require.Error(t, ErrDuplicateEmail, err)
+}
+
+func TestUpdatesDuplicateUsesr(t *testing.T) {
+	user1 := randomUser()
+	user2 := randomUser()
+
+	err := testModels.Users.Insert(&user1)
+	require.NoError(t, err)
+
+	err = testModels.Users.Insert(&user2)
+	require.NoError(t, err)
+
+	user2.Email = user1.Email
+
+	err = testModels.Users.Update(&user2)
+	require.Error(t, ErrDuplicateEmail, err)
+}
+
 func TestInsertUser(t *testing.T) {
 	t.Log("running 'TestInsertUser'")
 	user := randomUser()
 
 	t.Logf("inserting random user:  %+v", user)
-	err := InsertUser(&user)
+	err := testModels.Users.Insert(&user)
 
 	require.NoError(t, err)
-}
-
-func InsertUser(user *User) error {
-	return testModels.Users.Insert(user)
 }
 
 func randomUser() User {
