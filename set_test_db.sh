@@ -27,7 +27,7 @@ do
    clean_up
 done
 
-echo 'start checking to se if the db is ready...'
+echo 'start checking to see if the db is ready...'
 timeout 25s bash -c "until docker exec ${CONTAINER_NAME_TEST} pg_isready; do sleep 5; done"
 exit_status=$?
 if [[ exit_status -ne 0 ]]; then
