@@ -12,40 +12,33 @@ import (
 )
 
 func TestUpdateUser(t *testing.T) {
-	randomUser1 := randomUser()
-	err := testModels.Users.Insert(&randomUser1)
-	t.Logf("random user: %+v", randomUser1)
+	beforeUser := randomUser()
+
+	err := testModels.Users.Insert(&beforeUser)
+	t.Logf("before user: %+v", beforeUser)
 
 	require.NoError(t, err)
-
-	beforeUser, err := testModels.Users.GetByEmail(randomUser1.Email)
-
-	t.Logf("user created before update: %+v", beforeUser)
-
-	require.NoError(t, err)
-	require.NotEmpty(t, beforeUser)
 
 	beforeUser.Email = util.RandomEmail()
 	beforeUser.Name = util.RandomFullName()
-	versionBeforeUpdate := beforeUser.Version
+
 	err = beforeUser.Password.Set(util.RandomPassword())
+	require.NoError(t, err)
 
-	t.Logf("before update user with new fields: %+v", beforeUser)
+	versionBeforeUpdate := beforeUser.Version
+
+	t.Logf("before user with new fields: %+v", beforeUser)
+
+	err = testModels.Users.Update(&beforeUser)
 
 	require.NoError(t, err)
 
-	t.Log("making updates...")
-	err = testModels.Users.Update(beforeUser)
-
-	require.NoError(t, err)
-
-	t.Logf("getting updated user by email. Email: %s", beforeUser.Email)
 	afterUser, err := testModels.Users.GetByEmail(beforeUser.Email)
 
-	t.Logf("actual user: %+v", afterUser)
+	t.Logf("after user: %+v", afterUser)
 
 	require.NoError(t, err)
-	verifyUsers(t, *beforeUser, *afterUser)
+	verifyUsers(t, beforeUser, *afterUser)
 
 	require.NotEqual(t, versionBeforeUpdate, afterUser.Version)
 }
@@ -65,12 +58,15 @@ func TestGetUserByEmail(t *testing.T) {
 
 func TestInserDuplicateUsesr(t *testing.T) {
 	user1 := randomUser()
+
 	err := testModels.Users.Insert(&user1)
-	require.NoError(t, err)
 	t.Logf("random user1: %+v", user1)
+
+	require.NoError(t, err)
 
 	user2 := randomUser()
 	user2.Email = user1.Email
+
 	t.Logf("random user2: %+v", user2)
 
 	err = testModels.Users.Insert(&user2)
