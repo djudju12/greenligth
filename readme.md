@@ -9,4 +9,4 @@ Você pode começar com `make help`.
 
 Não encontrarás ajuda com o deploy da aplicação aqui, somente iterações quanto a estrutura do projeto.
 
-Não deixei de checar o livro original!
+Não deixe de checar o livro original!

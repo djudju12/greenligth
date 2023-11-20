@@ -48,7 +48,7 @@ build/api:
 	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/api ./cmd/api
 
 .PHONY: run/tests/integration
-## Run all tests, including units
+## srun/tests/integration: run all tests, including units
 run/tests/integration:
 	go test ./... -tags=integration -db-dsn=$(shell ./set_test_db.sh | tee /dev/tty | tail -n 1)
 

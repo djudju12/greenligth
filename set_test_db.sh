@@ -20,8 +20,8 @@ clean_up() {
 echo 'creating container...'
 until docker run --name $CONTAINER_NAME_TEST        \
            -p $DB_EXTERNALPORT_TEST:$DB_PORT        \
-           --tmpfs /var/lib/postgresql/data:rw \
-           -e POSTGRES_PASSWORD=$DB_PASSWORD   \
+           --tmpfs /var/lib/postgresql/data:rw      \
+           -e POSTGRES_PASSWORD=$DB_PASSWORD        \
            -d $IMAGE_DB
 do
    clean_up
