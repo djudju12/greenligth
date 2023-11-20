@@ -50,7 +50,7 @@ build/api:
 .PHONY: run/tests/integration
 ## srun/tests/integration: run all tests, including units
 run/tests/integration:
-	go test ./... -tags=integration -db-dsn=$(shell ./set_test_db.sh | tee /dev/tty | tail -n 1)
+	go test ./... -tags=integration -db-dsn=$(shell ./set_test_db.sh)
 
 .PHONY: audit
 ## audit: tidy and vendor dependencies and format, vet and test all code
