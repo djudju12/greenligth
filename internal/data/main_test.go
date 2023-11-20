@@ -19,7 +19,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	testDB, err := OpenDB(cfg)
-	fmt.Printf("%+v", cfg)
+	fmt.Printf("cfg test db: %+v\n", cfg)
 
 	if err != nil {
 		log.Fatalf("make sure to set up env vars to run the integration tests. err: %s", err)
