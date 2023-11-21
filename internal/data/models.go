@@ -12,7 +12,7 @@ var (
 
 type Models struct {
 	Movies      MovieModel
-	Users       UserModel
+	Users       UserQuerier
 	Tokens      TokenModel
 	Permissions PermissionModel
 }

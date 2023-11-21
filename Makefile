@@ -19,6 +19,13 @@ run/api:
 db/psql:
 	psql ${GREENLIGHT_DB_DSN}
 
+.PHONY: generate/mocks
+## generate/mocks: genereate mocks for the database
+generate/mocks:
+	rm -rf internal/mocks
+	mockgen -package mockdb -destination internal/mocks/user_mocks.go -source internal/data/users.go UserQuerier
+	mockgen -package mockdb -destination internal/mocks/mailer_mocks.go -source internal/mailer/mailer.go Mailer
+
 .PHONY: db/local/build
 ## db/build: create a new database
 db/local/build: confirm

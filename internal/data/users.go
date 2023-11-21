@@ -103,9 +103,18 @@ func (p *password) Matches(plainTextPassword string) (bool, error) {
 	return true, nil
 }
 
+type UserQuerier interface {
+	Insert(user *User) error
+	GetByEmail(email string) (*User, error)
+	Update(user *User) error
+	GetForToken(scope string, tokenPlainText string) (*User, error)
+}
+
 type UserModel struct {
 	DB *sql.DB
 }
+
+var _ UserQuerier = (*UserModel)(nil)
 
 func (m UserModel) Insert(user *User) error {
 	query := `
