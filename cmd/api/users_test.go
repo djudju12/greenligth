@@ -201,12 +201,12 @@ func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user *data.User) {
 	require.WithinDuration(t, user.CreatedAt, gotUser.CreatedAt, time.Second)
 }
 
-type eqUserMatcher struct {
+type eqUserInsertMatcher struct {
 	user              data.User
 	plainTextPassword string
 }
 
-func (eq eqUserMatcher) Matches(x any) bool {
+func (eq eqUserInsertMatcher) Matches(x any) bool {
 	user, ok := x.(*data.User)
 	if !ok {
 		return false
@@ -224,10 +224,10 @@ func (eq eqUserMatcher) Matches(x any) bool {
 		user.Name == eq.user.Name
 }
 
-func (eq eqUserMatcher) String() string {
+func (eq eqUserInsertMatcher) String() string {
 	return fmt.Sprintf("matchs arg %+v and password %+v", eq.user, eq.plainTextPassword)
 }
 
 func EqUserInsert(user data.User, plainTextPassword string) gomock.Matcher {
-	return eqUserMatcher{user, plainTextPassword}
+	return eqUserInsertMatcher{user, plainTextPassword}
 }
