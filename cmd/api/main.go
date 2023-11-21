@@ -47,7 +47,7 @@ type config struct {
 type application struct {
 	config config
 	logger *jsonlog.Logger
-	models data.Models
+	models *data.Models
 	mailer mailer.Mailer
 	wg     sync.WaitGroup
 }

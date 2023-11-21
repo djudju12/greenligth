@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-var testModels Models
+var testModels *Models
 
 func TestMain(m *testing.M) {
 	var cfg DBCfg
