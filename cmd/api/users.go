@@ -66,7 +66,8 @@ func (app *application) registerUserHandle(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	token, err := app.models.Tokens.New(user.ID, 3*24*time.Hour, data.ScopeActiviation)
+	token, err := app.models.Tokens.New(user.ID, 3*24*time.Hour,
+		data.ScopeActiviation)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return

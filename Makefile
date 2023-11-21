@@ -61,6 +61,11 @@ build/api:
 run/tests/integration:
 	go test ./... -tags=integration -db-dsn=$(shell ./set_test_db.sh)
 
+.PHONY: run/tests
+## srun/tests: rull all unity tests
+run/tests:
+	go test -race -vet=off ./...
+
 .PHONY: audit
 ## audit: tidy and vendor dependencies and format, vet and test all code
 audit: vendor
