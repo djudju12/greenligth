@@ -25,6 +25,9 @@ github.com/stretchr/testify/require
 # github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce
 ## explicit
 github.com/tomasen/realip
+# go.uber.org/mock v0.3.0
+## explicit; go 1.20
+go.uber.org/mock/gomock
 # golang.org/x/crypto v0.15.0
 ## explicit; go 1.18
 golang.org/x/crypto/bcrypt

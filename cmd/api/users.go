@@ -9,12 +9,14 @@ import (
 	"github.com/djudju12/greenlight/internal/validator"
 )
 
+type RegisterUserRequest struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 func (app *application) registerUserHandle(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		Name     string `json:"name"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+	var input RegisterUserRequest
 
 	err := app.readJSON(w, r, &input)
 	if err != nil {
