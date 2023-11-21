@@ -13,12 +13,12 @@ var (
 type Models struct {
 	Movies      MovieModel
 	Users       UserQuerier
-	Tokens      TokenModel
-	Permissions PermissionModel
+	Tokens      TokenQuerier
+	Permissions PermissionQuerier
 }
 
-func NewModels(db *sql.DB) Models {
-	return Models{
+func NewModels(db *sql.DB) *Models {
+	return &Models{
 		Movies:      MovieModel{DB: db},
 		Users:       UserModel{DB: db},
 		Tokens:      TokenModel{DB: db},

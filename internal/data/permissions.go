@@ -10,6 +10,11 @@ import (
 
 type Permissions []string
 
+type PermissionQuerier interface {
+	GetAllForUser(userID int64) (Permissions, error)
+	AddForUser(userID int64, codes ...string) error
+}
+
 func (p Permissions) Include(code string) bool {
 	for _, c := range p {
 		if code == c {

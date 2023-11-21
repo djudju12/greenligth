@@ -59,6 +59,11 @@ func ValidateTokenPlainText(v *validator.Validator, tokenPlainText string) {
 	v.Check(len(tokenPlainText) == 26, "token", "must be 26 bytes long")
 }
 
+type TokenQuerier interface {
+	New(userID int64, ttl time.Duration, scope string) (*Token, error)
+	DeleteAllForUser(scope string, userID int64) error
+}
+
 type TokenModel struct {
 	DB *sql.DB
 }

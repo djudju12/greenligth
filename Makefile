@@ -25,6 +25,8 @@ generate/mocks:
 	rm -rf internal/mocks
 	mockgen -package mockdb -destination internal/mocks/user_mocks.go -source internal/data/users.go UserQuerier
 	mockgen -package mockdb -destination internal/mocks/mailer_mocks.go -source internal/mailer/mailer.go Mailer
+	mockgen -package mockdb -destination internal/mocks/permission_mocks.go -source internal/data/permissions.go PermissionQueriers
+	mockgen -package mockdb -destination internal/mocks/tokens_mocks.go -source internal/data/tokens.go TokensQuerier
 
 .PHONY: db/local/build
 ## db/build: create a new database
