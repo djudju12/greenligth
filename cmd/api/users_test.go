@@ -242,7 +242,7 @@ func TestRegisterUserHandle(t *testing.T) {
 			},
 		},
 		{
-			name: "User Register Handle - 201 MAILER SHOULD NOT HAVE EFFECT ON USER CREATION",
+			name: "User Register Handle - 201 MAILER FAILING SHOULD NOT HAVE EFFECT ON USER CREATION",
 			requestBody: RegisterUserRequest{
 				Name:     expectedUser.Name,
 				Email:    expectedUser.Email,
@@ -285,6 +285,8 @@ func TestRegisterUserHandle(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
+			// url doesnt make any differece here
+			// but i think its good to make explicit
 			test := newTest(t, "/v1/users")
 			tc.buildStubs(t, test.app)
 
