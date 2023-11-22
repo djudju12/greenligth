@@ -27,19 +27,19 @@ type test struct {
 	url      string
 
 	// so we can pass this to the logger and not write direct to
-	// stdout. This is a filed so we can close the file after
+	// stdout. This is a field so we can close the file after
 	// test
 	tempFile *os.File
 }
 
 func newTest(t *testing.T, url string) test {
 	ctrl := gomock.NewController(t)
-	recorder := httptest.NewRecorder()
-
 	users := mockdb.NewMockUserQuerier(ctrl)
 	mailer := mockdb.NewMockMailer(ctrl)
 	permissions := mockdb.NewMockPermissionQuerier(ctrl)
 	tokens := mockdb.NewMockTokenQuerier(ctrl)
+
+	recorder := httptest.NewRecorder()
 
 	f, err := os.CreateTemp("", "tmpfile-")
 	if err != nil {
