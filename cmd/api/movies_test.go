@@ -282,7 +282,7 @@ func TestUpdateMoviesHandler(t *testing.T) {
 				mockMovies.EXPECT().
 					Get(movie.ID).
 					Return(movie, nil)
-''			},
+			},
 			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnprocessableEntity, r.Code)
 			},
