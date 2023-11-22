@@ -19,14 +19,28 @@ run/api:
 db/psql:
 	psql ${GREENLIGHT_DB_DSN}
 
+base_path=github.com/djudju12/greenlight
 .PHONY: generate/mocks
-## generate/mocks: genereate mocks for the database
+## generate/mocks: genereate mocks for the database. This will clean current mocks
 generate/mocks:
+	@echo 'Generating mocks'
 	rm -rf internal/mocks
-	mockgen -package mockdb -destination internal/mocks/user_mocks.go -source internal/data/users.go UserQuerier
-	mockgen -package mockdb -destination internal/mocks/mailer_mocks.go -source internal/mailer/mailer.go Mailer
-	mockgen -package mockdb -destination internal/mocks/permission_mocks.go -source internal/data/permissions.go PermissionQueriers
-	mockgen -package mockdb -destination internal/mocks/tokens_mocks.go -source internal/data/tokens.go TokensQuerier
+
+	mockgen -package mockdb \
+	-destination internal/mocks/users_mocks.go \
+	--build_flags=--mod=mod \
+	${base_path}/internal/data UserQuerier,PermissionQuerier,TokenQuerier
+
+	mockgen -package mockdb \
+	-destination internal/mocks/movie_mocks.go \
+	--build_flags=--mod=mod \
+	${base_path}/internal/data MovieQuerier
+
+	mockgen -package mockdb \
+	-destination internal/mocks/mailer_mocks.go \
+	--build_flags=--mod=mod \
+	${base_path}/internal/mailer Mailer
+
 
 .PHONY: db/local/build
 ## db/build: create a new database

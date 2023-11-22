@@ -32,7 +32,7 @@ type test struct {
 	tempFile *os.File
 }
 
-func newTest(t *testing.T, url string) test {
+func newUsersTest(t *testing.T, url string) test {
 	ctrl := gomock.NewController(t)
 	users := mockdb.NewMockUserQuerier(ctrl)
 	mailer := mockdb.NewMockMailer(ctrl)
@@ -304,7 +304,7 @@ func TestRegisterUserHandle(t *testing.T) {
 			// given
 			// url doesnt make any differece here
 			// but i think its good to make explicit
-			test := newTest(t, "/v1/users")
+			test := newUsersTest(t, "/v1/users")
 			tc.buildStubs(t, test.app)
 
 			body, err := toReader(tc.requestBody)
@@ -478,7 +478,7 @@ func TestActiveteUserHandle(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
-			test := newTest(t, "/v1/users")
+			test := newUsersTest(t, "/v1/users")
 			tc.buildStubs(t, test.app)
 
 			body, err := toReader(tc.requestBody)

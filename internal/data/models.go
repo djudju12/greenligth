@@ -11,7 +11,7 @@ var (
 )
 
 type Models struct {
-	Movies      MovieModel
+	Movies      MovieQuerier
 	Users       UserQuerier
 	Tokens      TokenQuerier
 	Permissions PermissionQuerier

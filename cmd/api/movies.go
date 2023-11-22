@@ -9,14 +9,15 @@ import (
 	"github.com/djudju12/greenlight/internal/validator"
 )
 
-func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		Title   string       `json:"title"`
-		Year    int32        `json:"year"`
-		Runtime data.Runtime `json:"runtime"`
-		Genres  []string     `json:"genres"`
-	}
+type CreateMovieRequest struct {
+	Title   string       `json:"title"`
+	Year    int32        `json:"year"`
+	Runtime data.Runtime `json:"runtime"`
+	Genres  []string     `json:"genres"`
+}
 
+func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
+	var input CreateMovieRequest
 	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
@@ -76,6 +77,13 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+type UpdateMovieRequest struct {
+	Title   *string       `json:"title"`
+	Year    *int32        `json:"year"`
+	Runtime *data.Runtime `json:"runtime"`
+	Genres  []string      `json:"genres"`
+}
+
 func (app *application) updatesMovieHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
@@ -83,13 +91,8 @@ func (app *application) updatesMovieHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var input struct {
-		Title   *string       `json:"title"`
-		Year    *int32        `json:"year"`
-		Runtime *data.Runtime `json:"runtime"`
-		Genres  []string      `json:"genres"`
-	}
-
+	var input UpdateMovieRequest
+	
 	err = app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
