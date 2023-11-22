@@ -64,7 +64,7 @@ run/tests/integration:
 .PHONY: run/tests
 ## srun/tests: rull all unity tests
 run/tests:
-	go test -race -vet=off ./...
+	go test -race -cover -vet=off ./...
 
 .PHONY: audit
 ## audit: tidy and vendor dependencies and format, vet and test all code

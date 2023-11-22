@@ -3,14 +3,17 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/djudju12/greenlight/internal/data"
+	"github.com/djudju12/greenlight/internal/jsonlog"
 	mockdb "github.com/djudju12/greenlight/internal/mocks"
 	"github.com/djudju12/greenlight/internal/util"
 	"github.com/stretchr/testify/require"
@@ -37,6 +40,7 @@ func newTest(t *testing.T, url string) test {
 			Permissions: permissions,
 			Tokens:      tokens,
 		},
+		logger: jsonlog.New(os.Stdout, jsonlog.LevelInfo),
 		mailer: mailer,
 	}
 
@@ -58,7 +62,7 @@ func TestRegisterUserHandle(t *testing.T) {
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
-			name: "User Register Handle - 200 OK",
+			name: "User Register Handle - 201 OK",
 			requestBody: RegisterUserRequest{
 				Name:     expectedUser.Name,
 				Email:    expectedUser.Email,
@@ -94,7 +98,6 @@ func TestRegisterUserHandle(t *testing.T) {
 					Return(nil)
 
 			},
-
 			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusCreated, r.Code)
 				requireBodyMatchUser(t, r.Body, &expectedUser)
@@ -106,9 +109,175 @@ func TestRegisterUserHandle(t *testing.T) {
 			buildStubs: func(t *testing.T, app *application) {
 				t.Log("no stubs to build in this test")
 			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnprocessableEntity, r.Code)
+			},
+		},
+		{
+			name: "User Register Handle - 422 PASSWORD WITH MORE THAN 72 CARACTERES",
+			requestBody: RegisterUserRequest{
+				Name:     expectedUser.Name,
+				Email:    expectedUser.Email,
+				Password: util.RandomString(73),
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				t.Log("no stubs to build in this test")
+			},
 
 			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnprocessableEntity, r.Code)
+			},
+		},
+		{
+			name: "User Register Handle - 422 INVALID USER",
+			requestBody: RegisterUserRequest{
+				Name:     "",
+				Email:    "",
+				Password: plaintextPassword,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				t.Log("no stubs to build in this test")
+			},
+
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnprocessableEntity, r.Code)
+			},
+		},
+		{
+			name: "User Register Handle - 422 DUPLICATED EMAIL",
+			requestBody: RegisterUserRequest{
+				Name:     expectedUser.Name,
+				Email:    expectedUser.Email,
+				Password: plaintextPassword,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				mockUsers, _, _ := modelMocks(t, app.models)
+
+				mockUsers.EXPECT().
+					Insert(EqUserInsert(expectedUser, plaintextPassword)).
+					Return(data.ErrDuplicateEmail)
+
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnprocessableEntity, r.Code)
+			},
+		},
+		{
+			name: "User Register Handle - 500 DB RETURNED ERROR IN ADD PERMISSION",
+			requestBody: RegisterUserRequest{
+				Name:     expectedUser.Name,
+				Email:    expectedUser.Email,
+				Password: plaintextPassword,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				mockUsers, mockPermissions, _ := modelMocks(t, app.models)
+
+				mockUsers.EXPECT().
+					Insert(EqUserInsert(expectedUser, plaintextPassword)).
+					DoAndReturn(func(user *data.User) error {
+						user.ID = expectedUser.ID
+						user.CreatedAt = expectedUser.CreatedAt
+						user.Version = expectedUser.Version
+						return nil
+					})
+
+				mockPermissions.EXPECT().
+					AddForUser(gomock.Any(), gomock.Any()).
+					Return(errors.New("some error"))
+
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, r.Code)
+			},
+		},
+		{
+			name: "User Register Handle - 500 DB RETURNED ERROR IN INSERT USERS",
+			requestBody: RegisterUserRequest{
+				Name:     expectedUser.Name,
+				Email:    expectedUser.Email,
+				Password: plaintextPassword,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				mockUsers, _, _ := modelMocks(t, app.models)
+
+				mockUsers.EXPECT().
+					Insert(EqUserInsert(expectedUser, plaintextPassword)).
+					Return(errors.New("some error"))
+
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, r.Code)
+			},
+		},
+		{
+			name: "User Register Handle - 500 DB RETURNED ERROR IN NEW TOKEN",
+			requestBody: RegisterUserRequest{
+				Name:     expectedUser.Name,
+				Email:    expectedUser.Email,
+				Password: plaintextPassword,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				mockUsers, mockPermissions, mockTokens := modelMocks(t, app.models)
+
+				mockUsers.EXPECT().
+					Insert(EqUserInsert(expectedUser, plaintextPassword)).
+					DoAndReturn(func(user *data.User) error {
+						user.ID = expectedUser.ID
+						user.CreatedAt = expectedUser.CreatedAt
+						user.Version = expectedUser.Version
+						return nil
+					})
+
+				mockPermissions.EXPECT().
+					AddForUser(gomock.Any(), "movies:read").
+					Return(nil)
+
+				mockTokens.EXPECT().
+					New(expectedUser.ID, 3*24*time.Hour, data.ScopeActiviation).
+					Return(&data.Token{}, errors.New("some error"))
+
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, r.Code)
+			},
+		},
+		{
+			name: "User Register Handle - 201 MAILER SHOULD NOT HAVE EFFECT ON USER CREATION",
+			requestBody: RegisterUserRequest{
+				Name:     expectedUser.Name,
+				Email:    expectedUser.Email,
+				Password: plaintextPassword,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				mockUsers, mockPermissions, mockTokens := modelMocks(t, app.models)
+				mockMailer, ok := app.mailer.(*mockdb.MockMailer)
+				require.True(t, ok)
+
+				mockUsers.EXPECT().
+					Insert(EqUserInsert(expectedUser, plaintextPassword)).
+					DoAndReturn(func(user *data.User) error {
+						user.ID = expectedUser.ID
+						user.CreatedAt = expectedUser.CreatedAt
+						user.Version = expectedUser.Version
+						return nil
+					})
+
+				mockPermissions.EXPECT().
+					AddForUser(gomock.Any(), "movies:read").
+					Return(nil)
+
+				mockTokens.EXPECT().
+					New(expectedUser.ID, 3*24*time.Hour, data.ScopeActiviation).
+					Return(expectedToken, nil)
+
+				mockMailer.EXPECT().
+					Send(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("some error"))
+
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusCreated, r.Code)
+				requireBodyMatchUser(t, r.Body, &expectedUser)
 			},
 		},
 	}
