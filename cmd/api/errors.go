@@ -5,6 +5,8 @@ import (
 	"net/http"
 )
 
+
+
 func (app *application) logError(r *http.Request, err error) {
 	app.logger.PrintError(err, map[string]string{
 		"request_method": r.Method,
@@ -12,7 +14,12 @@ func (app *application) logError(r *http.Request, err error) {
 	})
 }
 
-func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message any) {
+func (app *application) errorResponse(
+	w http.ResponseWriter,
+	r *http.Request,
+	status int,
+	message any,
+) {
 	envlp := envelope{"error": message}
 	err := app.writeJSON(w, status, envlp, nil)
 
@@ -43,7 +50,11 @@ func (app *application) methodNotAllowedResponsse(w http.ResponseWriter, r *http
 	app.errorResponse(w, r, http.StatusMethodNotAllowed, message)
 }
 
-func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
+func (app *application) failedValidationResponse(
+	w http.ResponseWriter,
+	r *http.Request,
+	errors map[string]string,
+) {
 	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
 }
 
