@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -24,15 +25,26 @@ type test struct {
 	app      *application
 	recorder *httptest.ResponseRecorder
 	url      string
+
+	// so we can pass this to the logger and not write direct to
+	// stdout. This is a filed so we can close the file after
+	// test
+	tempFile *os.File
 }
 
 func newTest(t *testing.T, url string) test {
 	ctrl := gomock.NewController(t)
 	recorder := httptest.NewRecorder()
+
 	users := mockdb.NewMockUserQuerier(ctrl)
 	mailer := mockdb.NewMockMailer(ctrl)
 	permissions := mockdb.NewMockPermissionQuerier(ctrl)
 	tokens := mockdb.NewMockTokenQuerier(ctrl)
+
+	f, err := os.CreateTemp("", "tmpfile-")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	app := &application{
 		models: &data.Models{
@@ -40,7 +52,7 @@ func newTest(t *testing.T, url string) test {
 			Permissions: permissions,
 			Tokens:      tokens,
 		},
-		logger: jsonlog.New(os.Stdout, jsonlog.LevelInfo),
+		logger: jsonlog.New(f, jsonlog.LevelInfo),
 		mailer: mailer,
 	}
 
@@ -48,7 +60,12 @@ func newTest(t *testing.T, url string) test {
 		recorder: recorder,
 		url:      url,
 		app:      app,
+		tempFile: f,
 	}
+}
+
+func (t *test) close() {
+	t.tempFile.Close()
 }
 
 func TestRegisterUserHandle(t *testing.T) {
@@ -62,7 +79,7 @@ func TestRegisterUserHandle(t *testing.T) {
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
-			name: "User Register Handle - 201 OK",
+			name: "User Register Handle - 201 CREATED",
 			requestBody: RegisterUserRequest{
 				Name:     expectedUser.Name,
 				Email:    expectedUser.Email,
@@ -242,7 +259,7 @@ func TestRegisterUserHandle(t *testing.T) {
 			},
 		},
 		{
-			name: "User Register Handle - 201 MAILER SHOULD NOT HAVE EFFECT ON USER CREATION",
+			name: "User Register Handle - 201 MAILER FAILING SHOULD NOT HAVE EFFECT ON USER CREATION",
 			requestBody: RegisterUserRequest{
 				Name:     expectedUser.Name,
 				Email:    expectedUser.Email,
@@ -285,6 +302,8 @@ func TestRegisterUserHandle(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
+			// url doesnt make any differece here
+			// but i think its good to make explicit
 			test := newTest(t, "/v1/users")
 			tc.buildStubs(t, test.app)
 
@@ -299,6 +318,181 @@ func TestRegisterUserHandle(t *testing.T) {
 			// then
 			tc.checkResponse(t, test.recorder)
 			test.app.wg.Wait()
+
+			test.close()
+		})
+	}
+}
+
+func TestActiveteUserHandle(t *testing.T) {
+	expectedUser, _ := randomUser()
+	expetedToken := randomToken()
+	testCases := []struct {
+		name          string
+		requestBody   ActiveteUserRequest
+		buildStubs    func(t *testing.T, app *application)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "Activate User Handler - 200 OK",
+			requestBody: ActiveteUserRequest{
+				TokenPlainText: expetedToken.Plaintext,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				users, _, tokens := modelMocks(t, app.models)
+
+				users.EXPECT().
+					GetForToken(data.ScopeActiviation, expetedToken.Plaintext).
+					Return(&expectedUser, nil)
+
+				// i dont know if this is any good :p
+				users.EXPECT().
+					Update(gomock.Any()).
+					DoAndReturn(func(user *data.User) error {
+						require.True(t, user.Activated)
+						return nil
+					})
+
+				tokens.EXPECT().
+					DeleteAllForUser(data.ScopeActiviation, expectedUser.ID).
+					Return(nil)
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, r.Code)
+				requireBodyMatchUser(t, r.Body, &expectedUser)
+			},
+		},
+		{
+			name: "Activate User Handler - 422 TOKEN TOO SMOL PLAIN TEXT",
+			requestBody: ActiveteUserRequest{
+				TokenPlainText: util.RandomString(10),
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				t.Log("no stubs to build in this test")
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnprocessableEntity, r.Code)
+			},
+		},
+		{
+			name: "Activate User Handler - 422 TOKEN INVALID OR EXPIRED",
+			requestBody: ActiveteUserRequest{
+				TokenPlainText: expetedToken.Plaintext,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				users, _, _ := modelMocks(t, app.models)
+
+				users.EXPECT().
+					GetForToken(gomock.Any(), gomock.Any()).
+					Return(&data.User{}, data.ErrRecordNotFound)
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnprocessableEntity, r.Code)
+			},
+		},
+		{
+			name: "Activate User Handler - 500 DB RETURNED ERROR ON GET FOR TOKEN",
+			requestBody: ActiveteUserRequest{
+				TokenPlainText: expetedToken.Plaintext,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				users, _, _ := modelMocks(t, app.models)
+
+				users.EXPECT().
+					GetForToken(gomock.Any(), gomock.Any()).
+					Return(&data.User{}, errors.New("DB RETURNED ERROR ON GET FOR TOKEN"))
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, r.Code)
+			},
+		},
+		{
+			name: "Activate User Handler - 409 DB EDIT CONFLICT ON USER UPDATE",
+			requestBody: ActiveteUserRequest{
+				TokenPlainText: expetedToken.Plaintext,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				users, _, _ := modelMocks(t, app.models)
+
+				users.EXPECT().
+					GetForToken(data.ScopeActiviation, expetedToken.Plaintext).
+					Return(&expectedUser, nil)
+
+				// i dont know if this is any good :p
+				users.EXPECT().
+					Update(gomock.Any()).
+					Return(data.ErrEditConflict)
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusConflict, r.Code)
+			},
+		},
+		{
+			name: "Activate User Handler - 500 DB RETURNED ERROR ON USER UPDATE",
+			requestBody: ActiveteUserRequest{
+				TokenPlainText: expetedToken.Plaintext,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				users, _, _ := modelMocks(t, app.models)
+
+				users.EXPECT().
+					GetForToken(data.ScopeActiviation, expetedToken.Plaintext).
+					Return(&expectedUser, nil)
+
+				// i dont know if this is any good :p
+				users.EXPECT().
+					Update(gomock.Any()).
+					Return(errors.New("RETURNED ERROR ON USER UPDATE"))
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, r.Code)
+			},
+		},
+		{
+			name: "Activate User Handler - 500 DB RETURNED ERROR ON DELETE FOR ALL USERS",
+			requestBody: ActiveteUserRequest{
+				TokenPlainText: expetedToken.Plaintext,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				users, _, tokens := modelMocks(t, app.models)
+
+				users.EXPECT().
+					GetForToken(gomock.Any(), gomock.Any()).
+					Return(&expectedUser, nil)
+
+				// i dont know if this is any good :p
+				users.EXPECT().
+					Update(gomock.Any()).
+					Return(nil)
+
+				tokens.EXPECT().
+					DeleteAllForUser(gomock.Any(), gomock.Any()).
+					Return(errors.New("RETURNED ERROR ON DELETE FOR ALL USERS"))
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, r.Code)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			test := newTest(t, "/v1/users")
+			tc.buildStubs(t, test.app)
+
+			body, err := toReader(tc.requestBody)
+			require.NoError(t, err)
+
+			request := httptest.NewRequest(http.MethodPut, test.url, body)
+
+			// when
+			test.app.activateUserHandle(test.recorder, request)
+
+			// then
+			tc.checkResponse(t, test.recorder)
+
+			test.close()
 		})
 	}
 }
@@ -318,7 +512,7 @@ func randomUser() (data.User, string) {
 
 func randomToken() *data.Token {
 	return &data.Token{
-		Plaintext: util.RandomString(20),
+		Plaintext: util.RandomString(26),
 	}
 }
 
