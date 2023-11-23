@@ -92,7 +92,7 @@ func (app *application) updatesMovieHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	var input UpdateMovieRequest
-	
+
 	err = app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
@@ -155,7 +155,7 @@ func (app *application) updatesMovieHandler(w http.ResponseWriter, r *http.Reque
 func (app *application) deleteMovieHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		app.notFoundResponse(w, r)
 		return
 	}
 
@@ -176,12 +176,14 @@ func (app *application) deleteMovieHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+type ListMoviesRequest struct {
+	Title  string
+	Genres []string
+	data.Filters
+}
+
 func (app *application) listMoviesHandles(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		Title  string
-		Genres []string
-		data.Filters
-	}
+	var input ListMoviesRequest
 
 	v := validator.New()
 	qs := r.URL.Query()
