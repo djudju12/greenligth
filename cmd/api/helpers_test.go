@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -96,6 +97,48 @@ func TestReadJsonForErrors(t *testing.T) {
 			// then
 			require.Error(t, err)
 			t.Logf("error %s", err.Error())
+		})
+	}
+}
+
+func TestReadCSSV(t *testing.T) {
+	app := &application{}
+	testCase := []struct {
+		name         string
+		values       string
+		defaultValue []string
+		check        func(t *testing.T, values []string)
+	}{
+		{
+			name:         "Read CSV receives an input and return the list",
+			values:       "hello,world",
+			defaultValue: []string{""},
+			check: func(t *testing.T, values []string) {
+				require.ElementsMatch(t, []string{"hello", "world"}, values)
+			},
+		},
+		{
+			name:         "Read CSV receives NO input and return default value",
+			values:       "",
+			defaultValue: []string{"hello", "world"},
+			check: func(t *testing.T, values []string) {
+				require.ElementsMatch(t, []string{"hello", "world"}, values)
+			},
+		},
+	}
+
+	for _, tc := range testCase {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			key := "values"
+			qs := make(url.Values)
+			qs.Add(key, tc.values)
+
+			// when
+			values := app.readCSV(qs, key, tc.defaultValue)
+
+			// then
+			tc.check(t, values)
 		})
 	}
 }
