@@ -498,6 +498,7 @@ func TestShowMovieHandler(t *testing.T) {
 	}
 }
 
+// TODO: this test can get more attention
 func TestListMoviesHandler(t *testing.T) {
 	sortSafelist := []string{
 		"id",
