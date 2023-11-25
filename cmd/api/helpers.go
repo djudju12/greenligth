@@ -52,9 +52,10 @@ func (app *application) writeJSON(
 	return nil
 }
 
+var JsonMaxBytes = 1_048_576
+
 func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any) error {
-	maxBytes := 1_048_576
-	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
+	r.Body = http.MaxBytesReader(w, r.Body, int64(JsonMaxBytes))
 
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
@@ -71,7 +72,7 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 		// the decode destination is not valid (usually means that is not a pointer)
 		var invalidUnmarshalError *json.InvalidUnmarshalError
 
-		// JSON is larger the maxBytes
+		// JSON is larger the JsonMaxBytes
 		var maxBytesError *http.MaxBytesError
 
 		switch {
