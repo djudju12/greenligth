@@ -9,11 +9,13 @@ import (
 	"github.com/djudju12/greenlight/internal/validator"
 )
 
+type CreateAuthenticationRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+	var input CreateAuthenticationRequest
 
 	err := app.readJSON(w, r, &input)
 	if err != nil {

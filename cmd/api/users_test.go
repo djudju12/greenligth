@@ -513,6 +513,7 @@ func randomUser() (data.User, string) {
 func randomToken() *data.Token {
 	return &data.Token{
 		Plaintext: util.RandomString(26),
+		Expiry:    time.Now().Add(24 * time.Hour),
 	}
 }
 
