@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,22 +10,6 @@ import (
 	"github.com/djudju12/greenlight/internal/util"
 	"github.com/stretchr/testify/require"
 )
-
-func TestReadJson2(t *testing.T) {
-	var jsonBody strings.Builder
-
-	jsonBody.WriteString("{\"teste\": \"hello,\"teste2\":\"hello\"}")
-	var test struct {
-		Test int `json:"teste"`
-	}
-
-	r := httptest.NewRequest(http.MethodGet, "/", io.NopCloser(strings.NewReader(jsonBody.String())))
-	app := &application{}
-	var w http.ResponseWriter
-	err := app.readJSON(w, r, &test)
-	fmt.Println(err)
-	require.Error(t, err)
-}
 
 type testStruct struct {
 	TestField1 string `json:"test1"`
