@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/djudju12/greenlight/internal/data"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func TestCreateAutheticationTokenHandler(t *testing.T) {
@@ -56,6 +58,61 @@ func TestCreateAutheticationTokenHandler(t *testing.T) {
 			},
 			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnprocessableEntity, r.Code)
+			},
+		},
+		{
+			name: "Test Create Authentication Token - 500 DB RETURN ERROR ON GET EMAIL",
+			requestBody: CreateAuthenticationRequest{
+				Email:    user.Email,
+				Password: plainTextPassword,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				mockUsers, _, _ := modelMocks(t, app.models)
+
+				mockUsers.EXPECT().
+					GetByEmail(user.Email).
+					Return(&data.User{}, errors.New("DB RETURN ERROR ON GET EMAIL"))
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, r.Code)
+			},
+		},
+		{
+			name: "Test Create Authentication Token - 500 DB RETURN ERROR ON TOKEN NEW",
+			requestBody: CreateAuthenticationRequest{
+				Email:    user.Email,
+				Password: plainTextPassword,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				mockUsers, _, mockTokens := modelMocks(t, app.models)
+
+				mockUsers.EXPECT().
+					GetByEmail(user.Email).
+					Return(&user, nil)
+
+				mockTokens.EXPECT().
+					New(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&data.Token{}, errors.New("DB RETURN ERROR ON TOKEN NEW"))
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, r.Code)
+			},
+		},
+		{
+			name: "Test Create Authentication Token - 422 DB RETURN RECORD NOT FOUND",
+			requestBody: CreateAuthenticationRequest{
+				Email:    user.Email,
+				Password: plainTextPassword,
+			},
+			buildStubs: func(t *testing.T, app *application) {
+				mockUsers, _, _ := modelMocks(t, app.models)
+
+				mockUsers.EXPECT().
+					GetByEmail(user.Email).
+					Return(&data.User{}, data.ErrRecordNotFound)
+			},
+			checkResponse: func(t *testing.T, r *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, r.Code)
 			},
 		},
 		{
