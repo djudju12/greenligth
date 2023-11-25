@@ -87,7 +87,9 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 			mu.Lock()
 
 			if _, found := clients[ip]; !found {
-				clients[ip] = &client{limiter: rate.NewLimiter(rate.Limit(app.config.limiter.rps), app.config.limiter.burst)}
+				clients[ip] = &client{
+					limiter: rate.NewLimiter(rate.Limit(app.config.limiter.rps),
+						app.config.limiter.burst)}
 			}
 
 			clients[ip].lastSeen = time.Now()
@@ -221,13 +223,14 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 					w.Header().Set("Access-Control-Allow-Origin", origin)
 
 					// preflight
-					if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+					if r.Method == http.MethodOptions &&
+						r.Header.Get("Access-Control-Request-Method") != "" {
 						w.Header().Add("Access-Control-Allow-Method", "OPTIONS, PUT, PATCH, DELETE")
 
-						// it’s important to not set the wildcard Access-Control-Allow-Origin: * header
-						// or reflect the Origin header without checking against a list of trusted origins. Otherwise,
-						// this would leave your service vulnerable to a distributed brute-force attack against any
-						// authentication credentials that are passed in that header.
+						// it’s important to not set the wildcard Access-Control-Allow-Origin: * header or
+						// reflect the Origin header without checking against a list of trusted origins.
+						// Otherwise this would leave your service vulnerable to a distributed brute-force
+						// attack against any authentication credentials that are passed in that header.
 						w.Header().Add("Access-Control-Allow-Headers", "Authorization, Content-Type")
 
 						w.WriteHeader(http.StatusOK)
