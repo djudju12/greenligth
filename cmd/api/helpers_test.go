@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/djudju12/greenlight/internal/util"
+	"github.com/djudju12/greenlight/internal/validator"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +21,7 @@ type testStruct struct {
 
 func TestReadJsonForErrors(t *testing.T) {
 	app := &application{}
-	testCase := []struct {
+	testCases := []struct {
 		name     string
 		jsonBody string
 	}{
@@ -84,7 +85,7 @@ func TestReadJsonForErrors(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCase {
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
 			dst := testStruct{}
@@ -103,7 +104,7 @@ func TestReadJsonForErrors(t *testing.T) {
 
 func TestReadCSSV(t *testing.T) {
 	app := &application{}
-	testCase := []struct {
+	testCases := []struct {
 		name         string
 		values       string
 		defaultValue []string
@@ -127,7 +128,7 @@ func TestReadCSSV(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCase {
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
 			key := "values"
@@ -139,6 +140,63 @@ func TestReadCSSV(t *testing.T) {
 
 			// then
 			tc.check(t, values)
+		})
+	}
+}
+
+func TestReadInt(t *testing.T) {
+	app := &application{}
+
+	testCases := []struct {
+		name         string
+		value        string
+		defaultValue int
+		check        func(t *testing.T, value int, v *validator.Validator)
+	}{
+		{
+			name:         "Read int receives a input and return the integer",
+			value:        "10",
+			defaultValue: 0,
+			check: func(t *testing.T, value int, v *validator.Validator) {
+				require.Equal(t, value, 10)
+				require.True(t, v.Valid())
+			},
+		},
+		{
+			name:         "Read int receives an invalid input and return the default value",
+			value:        "invalid",
+			defaultValue: 10,
+			check: func(t *testing.T, value int, v *validator.Validator) {
+				require.Equal(t, value, 10)
+				require.False(t, v.Valid())
+				_, ok := v.Errors["value"]
+				require.True(t, ok)
+			},
+		},
+		{
+			name:         "Read int receives no input and return the default value",
+			value:        "",
+			defaultValue: 10,
+			check: func(t *testing.T, value int, v *validator.Validator) {
+				require.Equal(t, value, 10)
+				require.True(t, v.Valid())
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			key := "value"
+			v := validator.New()
+			qs := make(url.Values)
+			qs.Add(key, tc.value)
+
+			// when
+			value := app.readInt(qs, key, tc.defaultValue, v)
+
+			// then
+			tc.check(t, value, v)
 		})
 	}
 }
